@@ -139,12 +139,13 @@
         <div class="col-12">
             <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
                 <iframe 
-                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2695.597651034336!2d19.04023531562678!3d47.49791297917737!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x4741dc41b8469653%3A0x6c003051e8a4a0!2sBudapest%2C%20De%C3%A1k%20Ferenc%20t%C3%A9r!5e0!3m2!1shu!2shu!4v1646841234567!5m2!1shu!2shu" 
+                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2681.936087262085!2d19.125950876878342!3d47.78263597525389!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x4741d4000305886d%3A0xe546944062635123!2zVsOhYywgS29zc3V0aCB0w6lyIDEsIDI2MDA!5e0!3m2!1shu!2shu!4v1713430000000!5m2!1shu!2shu" 
                     width="100%" 
-                    height="400" 
+                    height="450" 
                     style="border:0;" 
                     allowfullscreen="" 
-                    loading="lazy">
+                    loading="lazy" 
+                    referrerpolicy="no-referrer-when-downgrade">
                 </iframe>
             </div>
         </div>

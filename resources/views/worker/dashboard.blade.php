@@ -93,7 +93,7 @@
                                                             </button>
                                                         </form>
 
-                                                        {{-- ELUTASÍTÁS GOMB (Ez már csak a modalt nyitja meg) --}}
+                                                        {{-- ELUTASÍTÁS GOMB --}}
                                                         <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-3 fw-bold" data-bs-toggle="modal" data-bs-target="#rejectModal{{ $foglalas->id }}">
                                                             Elutasítás
                                                         </button>
@@ -115,13 +115,11 @@
                                                                         <span class="text-primary fs-6">{{ $foglalas->szolgaltatas->nev }}</span><br>
                                                                         <span class="text-muted fs-6">{{ $foglalas->datum }} | {{ substr($foglalas->ido_kezdes, 0, 5) }}</span>
                                                                     </div>
-                                                                    <p class="small text-muted mb-0 text-center">A vendég e-mailben automatikus értesítést kap a lemondásról, és a naptárad azonnal felszabadul erre az időszakra.</p>
+                                                                    <p class="small text-muted mb-0 text-center">A vendég e-mailben automatikus értesítést kap a lemondásról.</p>
                                                                 </div>
                                                                 
                                                                 <div class="modal-footer border-top-0 pt-0 justify-content-center gap-2">
                                                                     <button type="button" class="btn btn-light rounded-pill px-4 fw-bold shadow-sm" data-bs-dismiss="modal">Mégsem</button>
-                                                                    
-                                                                    {{-- TÉNYLEGES ELUTASÍTÓ FORM --}}
                                                                     <form action="{{ route('worker.status.reject', $foglalas->id) }}" method="POST" class="m-0">
                                                                         @csrf
                                                                         <button type="submit" class="btn btn-danger rounded-pill px-4 fw-bold shadow-sm">
@@ -181,7 +179,6 @@
                     <h6 class="fw-bold mb-3 text-dark">Rögzített jövőbeli szabadságaid</h6>
                     
                     @php
-                        // Lekérjük a dolgozó jövőbeli szabadságait közvetlenül
                         $jovobeliSzabadsagok = App\Models\Szabadsagok::where('dolgozo_id', $dolgozo->id)
                             ->where('datum_vege', '>=', now()->toDateString())
                             ->orderBy('datum_kezdes')
@@ -199,12 +196,9 @@
                                     </div>
                                     
                                     <div class="d-flex gap-2">
-                                        {{-- SZERKESZTÉS GOMB --}}
                                         <button type="button" class="btn btn-sm btn-outline-primary border-0" data-bs-toggle="modal" data-bs-target="#editModal{{ $sz->id }}">
                                             <i>✏️</i> Szerkesztés
                                         </button>
-
-                                        {{-- TÖRLÉS GOMB --}}
                                         <button type="button" class="btn btn-sm btn-outline-danger border-0" data-bs-toggle="modal" data-bs-target="#deleteModal{{ $sz->id }}">
                                             <i>🗑</i> Törlés
                                         </button>
@@ -220,7 +214,7 @@
                                                 @method('PUT')
                                                 <div class="modal-header border-bottom-0">
                                                     <h5 class="modal-title fw-bold" id="editModalLabel{{ $sz->id }}">Szabadság módosítása</h5>
-                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Bezárás"></button>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                 </div>
                                                 <div class="modal-body py-3">
                                                     <div class="mb-3">
@@ -244,31 +238,25 @@
                                 </div>
 
                                 {{-- MODAL: TÖRLÉS --}}
-                                <div class="modal fade" id="deleteModal{{ $sz->id }}" tabindex="-1" aria-labelledby="deleteModalLabel{{ $sz->id }}" aria-hidden="true">
+                                <div class="modal fade" id="deleteModal{{ $sz->id }}" tabindex="-1" aria-hidden="true">
                                     <div class="modal-dialog modal-dialog-centered">
                                         <div class="modal-content border-0 shadow-lg rounded-4">
                                             <div class="modal-header border-bottom-0 pb-0">
-                                                <h5 class="modal-title fw-bold text-danger" id="deleteModalLabel{{ $sz->id }}">Szabadság törlése</h5>
-                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Bezárás"></button>
+                                                <h5 class="modal-title fw-bold text-danger">Szabadság törlése</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                             </div>
-                                            
                                             <div class="modal-body py-4">
                                                 <p class="mb-1 text-center">Biztosan törölni szeretnéd a következő szabadságodat?</p>
                                                 <p class="fw-bold fs-5 text-dark text-center my-3 bg-light rounded py-3 border">
                                                     {{ $sz->datum_kezdes }} <br><span class="text-muted fs-6">⬇</span><br> {{ $sz->datum_vege }}
                                                 </p>
-                                                <p class="small text-muted mb-0 text-center">Ez a művelet nem vonható vissza, és a naptárad azonnal felszabadul ezeken a napokon.</p>
                                             </div>
-                                            
                                             <div class="modal-footer border-top-0 pt-0 justify-content-center gap-2">
                                                 <button type="button" class="btn btn-light rounded-pill px-4 fw-bold shadow-sm" data-bs-dismiss="modal">Mégsem</button>
-                                                
                                                 <form action="{{ route('worker.vacation.destroy', $sz->id) }}" method="POST" class="m-0">
                                                     @csrf
                                                     @method('DELETE')
-                                                    <button type="submit" class="btn btn-danger rounded-pill px-4 fw-bold shadow-sm">
-                                                        Igen, törlöm
-                                                    </button>
+                                                    <button type="submit" class="btn btn-danger rounded-pill px-4 fw-bold shadow-sm">Igen, törlöm</button>
                                                 </form>
                                             </div>
                                         </div>
@@ -282,8 +270,88 @@
         </div>
     </div>
 
-    {{-- ÚJ: NAPTÁR NÉZET SZEKCIÓ (Teljes szélességben a táblázatok alatt) --}}
-    <div class="row mt-5">
+    {{-- ÚJ: BEOSZTÁS KEZELŐ --}}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="mb-0 fw-bold text-primary"><i class="fas fa-clock me-2"></i>Heti Beosztásom</h5>
+                    <small class="text-muted">Itt állíthatod be, mely napokon mettől meddig dolgozol.</small>
+                </div>
+                <div class="card-body">
+                    <form id="scheduleForm" action="{{ route('worker.schedule.update') }}" method="POST" onsubmit="return validateScheduleTimes(event)">
+                        @csrf
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="width: 150px;">Nap</th>
+                                        <th style="width: 100px;">Dolgozom</th>
+                                        <th>Kezdés</th>
+                                        <th>Vége</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @php
+                                        // Generáljuk a választható időpontokat 08:00 és 20:00 között, szigorúan fél órás lépésekben
+                                        $timeOptions = [];
+                                        for($h = 8; $h <= 20; $h++) {
+                                            $timeOptions[] = sprintf("%02d:00", $h);
+                                            if ($h < 20) {
+                                                $timeOptions[] = sprintf("%02d:30", $h);
+                                            }
+                                        }
+                                    @endphp
+
+                                    @foreach($napok as $nap)
+                                        @php $b = $beosztasok->get($nap->id); @endphp
+                                        <tr>
+                                            <td class="fw-bold">{{ $nap->nev }}</td>
+                                            <td>
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox" name="schedule[{{ $nap->id }}][active]" value="1" {{ $b ? 'checked' : '' }} onchange="toggleInputs({{ $nap->id }}, this.checked)">
+                                                </div>
+                                            </td>
+                                            <td>
+                                                {{-- Kezdés: Az utolsó időpont (20:00) nem választható kezdésnek --}}
+                                                <select name="schedule[{{ $nap->id }}][start]" id="start_{{ $nap->id }}" class="form-select form-select-sm rounded-pill" style="cursor: pointer;" {{ !$b ? 'disabled' : '' }} onchange="updateEndOptions({{ $nap->id }})">
+                                                    @foreach($timeOptions as $time)
+                                                        @if($time != '20:00')
+                                                            <option value="{{ $time }}" {{ ($b && substr($b->ido_kezdes, 0, 5) == $time) || (!$b && $time == '09:00') ? 'selected' : '' }}>
+                                                                {{ $time }}
+                                                            </option>
+                                                        @endif
+                                                    @endforeach
+                                                </select>
+                                            </td>
+                                            <td>
+                                                {{-- Befejezés: Az első időpont (08:00) nem választható végnek --}}
+                                                <select name="schedule[{{ $nap->id }}][end]" id="end_{{ $nap->id }}" class="form-select form-select-sm rounded-pill" style="cursor: pointer;" {{ !$b ? 'disabled' : '' }}>
+                                                    @foreach($timeOptions as $time)
+                                                        @if($time != '08:00')
+                                                            <option value="{{ $time }}" {{ ($b && substr($b->ido_vege, 0, 5) == $time) || (!$b && $time == '17:00') ? 'selected' : '' }}>
+                                                                {{ $time }}
+                                                            </option>
+                                                        @endif
+                                                    @endforeach
+                                                </select>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="text-end mt-3">
+                            <button type="submit" class="btn btn-primary rounded-pill px-4 fw-bold">Beosztás mentése</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- NAPTÁR NÉZET SZEKCIÓ --}}
+    <div class="row mt-4">
         <div class="col-12">
             <div class="card shadow-sm border-0 rounded-4 p-4 mb-5 bg-white">
                 <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
@@ -295,28 +363,156 @@
                         <span class="badge bg-danger">Szabadság</span>
                     </div>
                 </div>
-                
-                {{-- Ide rajzolja ki a JS a naptárat --}}
                 <div id="calendar" style="min-height: 600px;"></div>
             </div>
         </div>
     </div>
 
 </div>
+
+{{-- MODAL: ÜTKÖZŐ FOGLALÁSOK A SZABADSÁGNÁL --}}
+@if(session('vacation_conflicts'))
+    <div class="modal fade" id="conflictModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="modal-header bg-danger text-white border-bottom-0 p-4">
+                    <h5 class="modal-title fw-bold">⚠️ Figyelem! Ütköző foglalások</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4 text-center">
+                    <p class="fs-5">A kért szabadság idejére <strong>({{ session('pending_vacation')['datum_kezdes'] }} - {{ session('pending_vacation')['datum_vege'] }})</strong> már van beosztott vendéged!</p>
+                    
+                    <div class="alert alert-warning border-0 rounded-3 my-4">
+                        <strong>Fontos:</strong> Ha folytatod, a rendszer automatikusan <strong>elutasítja</strong> az alábbi foglalásokat és e-mailben értesíti a vendégeket a szabadságodról.
+                    </div>
+
+                    <div class="list-group list-group-flush border rounded-4 overflow-hidden">
+                        @foreach(session('vacation_conflicts') as $conflict)
+                            <div class="list-group-item d-flex justify-content-between align-items-center bg-light py-3 px-4">
+                                <div class="text-start">
+                                    <div class="fw-bold text-dark">{{ $conflict->felhasznalo->nev }}</div>
+                                    <div class="small text-muted">{{ $conflict->szolgaltatas->nev }}</div>
+                                </div>
+                                <div class="text-end">
+                                    <div class="fw-bold text-primary">{{ $conflict->datum }}</div>
+                                    <div class="small text-muted">{{ substr($conflict->ido_kezdes, 0, 5) }}</div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 p-4 pt-0 justify-content-center gap-3">
+                    <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal">Mégsem (Vissza)</button>
+                    
+                    <form action="{{ session('pending_vacation_id') ? route('worker.vacation.update', session('pending_vacation_id')) : route('worker.vacation.store') }}" method="POST" class="m-0">
+                        @csrf
+                        @if(session('pending_vacation_id')) @method('PUT') @endif
+                        <input type="hidden" name="datum_kezdes" value="{{ session('pending_vacation')['datum_kezdes'] }}">
+                        <input type="hidden" name="datum_vege" value="{{ session('pending_vacation')['datum_vege'] }}">
+                        <input type="hidden" name="force_save" value="1">
+                        <button type="submit" class="btn btn-danger rounded-pill px-5 fw-bold shadow-sm">
+                            Igen, törlés és mentés
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="autoOpenConflictModalBtn" class="d-none" data-bs-toggle="modal" data-bs-target="#conflictModal"></button>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(function() {
+                var btn = document.getElementById('autoOpenConflictModalBtn');
+                if (btn) btn.click();
+            }, 300);
+        });
+    </script>
+@endif
+
+{{-- MODAL: ÜTKÖZŐ FOGLALÁSOK BEOSZTÁS MÓDOSÍTÁSNÁL --}}
+@if(session('schedule_conflicts'))
+    <div class="modal fade" id="scheduleConflictModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="modal-header bg-warning text-dark border-bottom-0 p-4">
+                    <h5 class="modal-title fw-bold">⚠️ Időpontok kerültek munkaidőn kívülre!</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <p class="fs-6 text-center">A beosztásod módosítása miatt a következő <strong>{{ session('schedule_conflicts')->count() }}</strong> foglalás kívül esik az új munkaidődön:</p>
+                    
+                    <div class="list-group list-group-flush border rounded-4 overflow-hidden my-3">
+                        @foreach(session('schedule_conflicts') as $conflict)
+                            <div class="list-group-item d-flex justify-content-between align-items-center bg-light py-2 px-3">
+                                <div class="text-start">
+                                    <div class="fw-bold small">{{ $conflict->felhasznalo->nev }}</div>
+                                    <div class="text-muted" style="font-size: 0.8rem;">{{ $conflict->szolgaltatas->nev }}</div>
+                                </div>
+                                <div class="text-end">
+                                    <div class="fw-bold text-primary small">{{ $conflict->datum }}</div>
+                                    <div class="text-muted" style="font-size: 0.8rem;">{{ substr($conflict->ido_kezdes, 0, 5) }} - {{ substr($conflict->ido_vege, 0, 5) }}</div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+
+                    <div class="alert alert-danger border-0 rounded-3 mb-0 small">
+                        <strong>Figyelem:</strong> Ha a mentést választod, ezek a foglalások <strong>elutasításra kerülnek</strong>, és a vendégek értesítést kapnak!
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 p-4 pt-0 justify-content-center gap-3">
+                    <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal">Mégsem</button>
+                    
+                    <form action="{{ route('worker.schedule.update') }}" method="POST" class="m-0">
+                        @csrf
+                        @php $ps = session('pending_schedule'); @endphp
+                        @foreach($ps as $id => $data)
+                            @if(isset($data['active'])) <input type="hidden" name="schedule[{{ $id }}][active]" value="1"> @endif
+                            <input type="hidden" name="schedule[{{ $id }}][start]" value="{{ $data['start'] }}">
+                            <input type="hidden" name="schedule[{{ $id }}][end]" value="{{ $data['end'] }}">
+                        @endforeach
+                        <input type="hidden" name="force_save" value="1">
+                        <button type="submit" class="btn btn-warning rounded-pill px-5 fw-bold shadow-sm">
+                            Igen, törlés és mentés
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button id="autoOpenScheduleModalBtn" class="d-none" data-bs-toggle="modal" data-bs-target="#scheduleConflictModal"></button>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(function() {
+                var btn = document.getElementById('autoOpenScheduleModalBtn');
+                if (btn) btn.click();
+            }, 300);
+        });
+    </script>
+@endif
+
 @endsection
 
-{{-- NAPTÁR JAVASCRIPT KÓDJA --}}
+{{-- JAVASCRIPT KÓDOK --}}
 @section('scripts')
+<script>
+    // Beosztás inputok engedélyezése/tiltása
+    function toggleInputs(id, checked) {
+        document.getElementById('start_' + id).disabled = !checked;
+        document.getElementById('end_' + id).disabled = !checked;
+    }
+</script>
+
 <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         var calendarEl = document.getElementById('calendar');
-        
-        // A WorkerControllerből kapott JSON adat (ha létezik, különben üres tömb)
         var calendarEvents = @json($calendarEvents ?? []);
 
         var calendar = new FullCalendar.Calendar(calendarEl, {
-            initialView: 'timeGridWeek', // Heti beosztás
+            initialView: 'timeGridWeek',
             locale: 'hu',
             headerToolbar: {
                 left: 'prev,next today',
@@ -329,9 +525,9 @@
                 week: 'Hét',
                 day: 'Nap'
             },
-            firstDay: 1, // Hétfő
-            slotMinTime: '08:00:00', // Szalon nyitás
-            slotMaxTime: '20:00:00', // Szalon zárás
+            firstDay: 1,
+            slotMinTime: '08:00:00',
+            slotMaxTime: '20:00:00',
             allDaySlot: true,
             allDayText: 'Egész nap',
             events: calendarEvents,
@@ -347,18 +543,14 @@
 </script>
 
 <script>
+    // Szabadság dátum korlátozások (Kezdés/Vége logika)
     document.addEventListener('DOMContentLoaded', function() {
         const kezdesInput = document.getElementById('datum_kezdes');
         const vegeInput = document.getElementById('datum_vege');
 
         if (kezdesInput && vegeInput) {
             kezdesInput.addEventListener('change', function() {
-                // Amikor a kezdő dátumot kiválasztja a dolgozó, 
-                // a befejező dátum naptárában a minimum választható nap a kezdő dátum lesz.
                 vegeInput.min = this.value;
-                
-                // Ha a befejező dátum már ki volt töltve, és az korábbi, mint az új kezdő dátum, 
-                // akkor automatikusan átugratjuk ugyanarra a napra.
                 if (vegeInput.value && vegeInput.value < this.value) {
                     vegeInput.value = this.value;
                 }
@@ -367,74 +559,63 @@
     });
 </script>
 
-
 <script>
+    // Flatpickr inicializálások a letiltott napokkal
     document.addEventListener('DOMContentLoaded', function() {
-        
-        // 1. Összegyűjtjük a Laravelből a jövőbeli szabadságokat
         const allVacations = [
             @foreach($jovobeliSzabadsagok as $sz)
                 { id: {{ $sz->id }}, from: "{{ $sz->datum_kezdes }}", to: "{{ $sz->datum_vege }}" },
             @endforeach
         ];
 
-        // 2. Segédfüggvény a záró dátum (Utolsó nap) korlátozására
         function updateEndDateConstraints(startDateStr, endDatePicker, disableRanges) {
-            // A vége nem lehet korábban, mint a kezdete
             endDatePicker.set('minDate', startDateStr);
-
             let start = new Date(startDateStr);
             let nextDisabledDate = null;
-
-            // Keresünk egy olyan letiltott időszakot, ami a kiválasztott kezdés UTÁN van
             let sortedRanges = [...disableRanges].sort((a, b) => new Date(a.from) - new Date(b.from));
+            
             for (let range of sortedRanges) {
                 let rangeStart = new Date(range.from);
                 if (rangeStart > start) {
                     nextDisabledDate = rangeStart;
-                    break; // Megtaláltuk a legelső ütközést
+                    break;
                 }
             }
 
-            // Ha van ilyen, akkor a maximálisan választható nap az ütközés ELŐTTI nap lesz
             if (nextDisabledDate) {
                 let maxDate = new Date(nextDisabledDate);
                 maxDate.setDate(maxDate.getDate() - 1);
                 endDatePicker.set('maxDate', maxDate);
             } else {
-                endDatePicker.set('maxDate', null); // Nincs felső korlát
+                endDatePicker.set('maxDate', null);
             }
         }
 
-        // --- ÚJ SZABADSÁG RÖGZÍTÉSE ---
-        // Itt az összes meglévő szabadságot tiltjuk
         const newDisableRanges = allVacations.map(v => ({ from: v.from, to: v.to }));
 
-        const newVegePicker = flatpickr("#datum_vege", {
-            locale: "hu",
-            minDate: "today",
-            disable: newDisableRanges
-        });
+        if(document.getElementById("datum_vege") && document.getElementById("datum_kezdes")) {
+            const newVegePicker = flatpickr("#datum_vege", {
+                locale: "hu",
+                minDate: "today",
+                disable: newDisableRanges
+            });
 
-        const newKezdesPicker = flatpickr("#datum_kezdes", {
-            locale: "hu",
-            minDate: "today",
-            disable: newDisableRanges,
-            onChange: function(selectedDates, dateStr) {
-                // Amikor kiválasztják a kezdetét, frissítjük a végét korlátozó szabályokat
-                updateEndDateConstraints(dateStr, newVegePicker, newDisableRanges);
-            }
-        });
+            const newKezdesPicker = flatpickr("#datum_kezdes", {
+                locale: "hu",
+                minDate: "today",
+                disable: newDisableRanges,
+                onChange: function(selectedDates, dateStr) {
+                    updateEndDateConstraints(dateStr, newVegePicker, newDisableRanges);
+                }
+            });
+        }
 
-        // --- MEGLÉVŐ SZABADSÁGOK SZERKESZTÉSE ---
         document.querySelectorAll('.modal').forEach(modal => {
             const editKezdesInput = modal.querySelector('.edit-kezdes');
             const editVegeInput = modal.querySelector('.edit-vege');
 
             if (editKezdesInput && editVegeInput) {
                 const currentId = editKezdesInput.dataset.id;
-
-                // Az aktuálisan szerkesztett szabadságot KIVESSZÜK a letiltottak közül
                 const editDisableRanges = allVacations
                     .filter(v => v.id != currentId)
                     .map(v => ({ from: v.from, to: v.to }));
@@ -454,81 +635,84 @@
                     }
                 });
 
-                // Inicializáláskor is beállítjuk a max/min értékeket a már meglévő adatok alapján
                 if (editKezdesInput.value) {
                     updateEndDateConstraints(editKezdesInput.value, editVegePicker, editDisableRanges);
-                    // Mivel a fenti függvény reseteli, visszaállítjuk az eredeti mentett értéket
                     editVegePicker.setDate(editVegeInput.value); 
                 }
             }
         });
-
     });
 </script>
 
-{{-- MODAL: ÜTKÖZŐ FOGLALÁSOK A SZABADSÁGNÁL --}}
-    @if(session('vacation_conflicts'))
-        <div class="modal fade" id="conflictModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
-            <div class="modal-dialog modal-dialog-centered modal-lg">
-                <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
-                    <div class="modal-header bg-danger text-white border-bottom-0 p-4">
-                        <h5 class="modal-title fw-bold">⚠️ Figyelem! Ütköző foglalások</h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body p-4 text-center">
-                        <p class="fs-5">A kért szabadság idejére <strong>({{ session('pending_vacation')['datum_kezdes'] }} - {{ session('pending_vacation')['datum_vege'] }})</strong> már van beosztott vendéged!</p>
-                        
-                        <div class="alert alert-warning border-0 rounded-3 my-4">
-                            <strong>Fontos:</strong> Ha folytatod, a rendszer automatikusan <strong>elutasítja</strong> az alábbi foglalásokat és e-mailben értesíti a vendégeket a szabadságodról.
-                        </div>
+<script>
+    function validateScheduleTimes(event) {
+        const rows = document.querySelectorAll('#scheduleForm tbody tr');
+        let hasError = false;
+        let errorMessage = "";
 
-                        <div class="list-group list-group-flush border rounded-4 overflow-hidden">
-                            @foreach(session('vacation_conflicts') as $conflict)
-                                <div class="list-group-item d-flex justify-content-between align-items-center bg-light py-3 px-4">
-                                    <div class="text-start">
-                                        <div class="fw-bold text-dark">{{ $conflict->felhasznalo->nev }}</div>
-                                        <div class="small text-muted">{{ $conflict->szolgaltatas->nev }}</div>
-                                    </div>
-                                    <div class="text-end">
-                                        <div class="fw-bold text-primary">{{ $conflict->datum }}</div>
-                                        <div class="small text-muted">{{ substr($conflict->ido_kezdes, 0, 5) }}</div>
-                                    </div>
-                                </div>
-                            @endforeach
-                        </div>
-                    </div>
-                    <div class="modal-footer border-top-0 p-4 pt-0 justify-content-center gap-3">
-                        <button type="button" class="btn btn-light rounded-pill px-4 fw-bold" data-bs-dismiss="modal">Mégsem (Vissza)</button>
-                        
-                        <form action="{{ session('pending_vacation_id') ? route('worker.vacation.update', session('pending_vacation_id')) : route('worker.vacation.store') }}" method="POST" class="m-0">
-                            @csrf
-                            @if(session('pending_vacation_id')) @method('PUT') @endif
-                            <input type="hidden" name="datum_kezdes" value="{{ session('pending_vacation')['datum_kezdes'] }}">
-                            <input type="hidden" name="datum_vege" value="{{ session('pending_vacation')['datum_vege'] }}">
-                            <input type="hidden" name="force_save" value="1">
-                            <button type="submit" class="btn btn-danger rounded-pill px-5 fw-bold shadow-sm">
-                                Igen, törlés és mentés
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
+        rows.forEach(row => {
+            const checkbox = row.querySelector('input[type="checkbox"]');
+            if (checkbox && checkbox.checked) {
+                const napNev = row.cells[0].innerText;
+                const start = row.querySelector('select[name*="[start]"]').value;
+                const end = row.querySelector('select[name*="[end]"]').value;
 
-        <button id="autoOpenConflictModalBtn" class="d-none" data-bs-toggle="modal" data-bs-target="#conflictModal"></button>
+                if (start >= end) {
+                    hasError = true;
+                    errorMessage += `${napNev}: A befejezésnek (${end}) később kell lennie, mint a kezdésnek (${start})!\n`;
+                }
+            }
+        });
 
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                // Adunk a böngészőnek 300 ezredmásodpercet, hogy biztosan betöltse a Bootstrapet a háttérben,
-                // majd szimulálunk egy kattintást a rejtett gombon.
-                setTimeout(function() {
-                    var btn = document.getElementById('autoOpenConflictModalBtn');
-                    if (btn) {
-                        btn.click();
-                    }
-                }, 300);
-            });
-        </script>
-    @endif
-    
+        if (hasError) {
+            alert("Hiba a beosztásban:\n\n" + errorMessage);
+            event.preventDefault();
+            return false;
+        }
+        return true;
+    }
+</script>
+
+<script>
+    // Dinamikusan frissíti a 'Vége' legördülő listát a kiválasztott 'Kezdés' alapján
+    function updateEndOptions(napId) {
+        const startSelect = document.getElementById('start_' + napId);
+        const endSelect = document.getElementById('end_' + napId);
+
+        if (!startSelect || !endSelect) return;
+
+        const selectedStartTime = startSelect.value;
+        let firstValidOption = null;
+
+        // Végigmegyünk a Vége lista összes opcióján
+        Array.from(endSelect.options).forEach(option => {
+            // Ha az opció ideje kisebb vagy egyenlő, mint a kezdés, letiltjuk és elrejtjük
+            if (option.value <= selectedStartTime) {
+                option.disabled = true;
+                option.hidden = true;
+            } else {
+                // Különben engedélyezzük
+                option.disabled = false;
+                option.hidden = false;
+                if (!firstValidOption) {
+                    firstValidOption = option.value; // Megjegyezzük az első érvényes opciót
+                }
+            }
+        });
+
+        // Ha a jelenleg kiválasztott 'Vége' időpont érvénytelenné vált (<= kezdés),
+        // automatikusan átállítjuk az első érvényes opcióra (kezdés + 30 perc).
+        if (endSelect.value <= selectedStartTime && firstValidOption) {
+            endSelect.value = firstValidOption;
+        }
+    }
+
+    // Az oldal betöltésekor lefuttatjuk minden napra, hogy már alapból helyes legyen a lista
+    document.addEventListener('DOMContentLoaded', function() {
+        @foreach($napok as $nap)
+            updateEndOptions({{ $nap->id }});
+        @endforeach
+    });
+</script>
+
 @endsection
