@@ -58,14 +58,17 @@ Route::middleware('auth')->group(function () {
 // ============================================================
 // Dolgozó (worker guard)
 // ============================================================
-Route::middleware('auth:worker')->group(function () {
-    Route::get('/dolgozo/dashboard', [WorkerController::class, 'dashboard'])->name('worker.dashboard');
-    Route::put('/dolgozo/szabadsag/{id}', [WorkerController::class, 'updateVacation'])->name('worker.vacation.update');
-    Route::post('/dolgozo/kijelentkezes', [WorkerController::class, 'logout'])->name('worker.logout');
-    Route::post('/dolgozo/foglalas/{id}/elfogadas', [WorkerController::class, 'updateStatus'])->name('worker.status.accept');
-    Route::post('/dolgozo/szabadsag', [WorkerController::class, 'storeVacation'])->name('worker.vacation.store');
-    Route::post('/dolgozo/foglalas/{id}/elutasitas', [WorkerController::class, 'rejectStatus'])->name('worker.status.reject');
-    Route::delete('/dolgozo/szabadsag/{id}', [WorkerController::class, 'destroyVacation'])->name('worker.vacation.destroy');
+Route::middleware('auth:worker')->prefix('dolgozo')->name('worker.')->group(function () {
+    Route::get('/dashboard', [WorkerController::class, 'dashboard'])->name('dashboard');
+    Route::put('/szabadsag/{id}', [WorkerController::class, 'updateVacation'])->name('vacation.update');
+    Route::post('/kijelentkezes', [WorkerController::class, 'logout'])->name('logout');
+    Route::post('/foglalas/{id}/elfogadas', [WorkerController::class, 'updateStatus'])->name('status.accept');
+    Route::post('/szabadsag', [WorkerController::class, 'storeVacation'])->name('vacation.store');
+    Route::post('/foglalas/{id}/elutasitas', [WorkerController::class, 'rejectStatus'])->name('status.reject');
+    Route::delete('/szabadsag/{id}', [WorkerController::class, 'destroyVacation'])->name('vacation.destroy');
+    
+    // --- ÚJ: Beosztás mentése ---
+    Route::post('/beosztas', [WorkerController::class, 'updateSchedule'])->name('schedule.update');
 });
 
 Route::post('/kapcsolat/kuldes', [HomeController::class, 'sendContactEmail'])->name('kapcsolat.send');
