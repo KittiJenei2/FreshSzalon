@@ -248,39 +248,36 @@ class IdopontfoglalasController extends Controller
 
         $szolgaltatas = Szolgaltatas::findOrFail($szolgaltatasId);
 
-        // Dolgozó munka napjai → nap ID-k
         $munkanapok = Beosztas::where('dolgozo_id', $dolgozoId)
             ->pluck('napok_id')
             ->toArray();
 
-        // Szabadság intervallumok
         $szabadsagok = Szabadsagok::where('dolgozo_id', $dolgozoId)->get();
 
         $ma = now()->toDateString();
-        $egyHonap = now()->addMonths(1); // max 1 hónapot engedünk előre
+        
+        $eloreLathatoIdo = now()->addMonths(3); 
 
         $foglalhato = [];
 
-        $datum = now()->copy();
-        while ($datum <= $egyHonap) {
+        $datum = now()->startOfDay(); 
+        
+        while ($datum <= $eloreLathatoIdo) {
 
-            // 1) múlt kizárása
             if ($datum->toDateString() < $ma) {
                 $datum->addDay();
                 continue;
             }
 
-            // 2) dolgozó munkanapjai
-            $napId = $datum->dayOfWeekIso; // 1 = hétfő ... 7 = vasárnap
+            $napId = $datum->dayOfWeekIso; 
             if (!in_array($napId, $munkanapok)) {
                 $datum->addDay();
                 continue;
             }
 
-            // 3) szabadság kizárása
             $szabad = false;
             foreach ($szabadsagok as $szabadsag) {
-                if ($datum->between($szabadsag->datum_kezdes, $szabadsag->datum_vege)) {
+                if ($datum->between(Carbon::parse($szabadsag->datum_kezdes)->startOfDay(), Carbon::parse($szabadsag->datum_vege)->endOfDay())) {
                     $szabad = true;
                     break;
                 }
@@ -290,7 +287,6 @@ class IdopontfoglalasController extends Controller
                 continue;
             }
 
-            // Ha idáig eljutott → foglalható
             $foglalhato[] = $datum->toDateString();
             $datum->addDay();
         }

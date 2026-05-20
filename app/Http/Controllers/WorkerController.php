@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 use App\Models\Idopontfoglalas;
 use App\Models\Szabadsagok;
+use App\Models\Beosztas;
+use App\Models\Napok;
 use App\Mail\FoglalasLemondva;
 use Carbon\Carbon;
 
@@ -27,7 +29,7 @@ class WorkerController extends Controller
     // --- FŐ METÓDUSOK ---
 
     /**
-     * Dolgozói műszerfal megjelenítése (Naptár + Táblázat)
+     * Dolgozói műszerfal megjelenítése (Naptár + Táblázat + Beosztás)
      */
     public function dashboard()
     {
@@ -49,10 +51,83 @@ class WorkerController extends Controller
             
         $szabadsagok = Szabadsagok::where('dolgozo_id', $dolgozo->id)->get();
 
+        // 3. Adatok a beosztás kezelőhöz
+        $beosztasok = Beosztas::where('dolgozo_id', $dolgozo->id)->get()->keyBy('napok_id');
+        $napok = Napok::all();
+
         // Naptár JSON formázása segédmetódussal
         $calendarEvents = $this->generateCalendarEvents($osszesFoglalas, $szabadsagok);
 
-        return view('worker.dashboard', compact('dolgozo', 'foglalasok', 'calendarEvents'));
+        return view('worker.dashboard', compact('dolgozo', 'foglalasok', 'calendarEvents', 'beosztasok', 'napok'));
+    }
+
+    /**
+     * Heti beosztás frissítése kétlépcsős konfliktuskezeléssel
+     */
+    public function updateSchedule(Request $request)
+    {
+        $dolgozoId = Auth::guard('worker')->id();
+        $ujBeosztas = $request->input('schedule', []);
+        
+        // --- VALIDÁCIÓ - Kezdés < Vége ellenőrzése ---
+        foreach ($ujBeosztas as $napId => $napAdat) {
+            if (isset($napAdat['active']) && $napAdat['start'] >= $napAdat['end']) {
+                $napNev = Napok::find($napId)->nev;
+                return back()->withErrors(['schedule' => "A(z) $napNev napon a kezdési időnek korábban kell lennie, mint a befejezésnek!"])->withInput();
+            }
+        }
+        
+        // 1. Ütköző foglalások megkeresése
+        $utkozok = collect();
+        foreach(range(1, 7) as $napId) {
+            $napAdat = $ujBeosztas[$napId] ?? null;
+            $aktiv = isset($napAdat['active']);
+            
+            // Lekérdezzük az adott naphoz tartozó aktív foglalásokat a jövőben
+            $lekerdezes = Idopontfoglalas::where('dolgozo_id', $dolgozoId)
+                ->whereIn('statuszok_id', [1, 2])
+                ->whereDate('datum', '>=', now()->toDateString())
+                ->whereRaw('WEEKDAY(datum) + 1 = ?', [$napId]); // WEEKDAY 0=Hétfő, NapokID 1=Hétfő
+                
+            if ($aktiv) {
+                $kezdes = $napAdat['start'];
+                $vege = $napAdat['end'];
+                // Ütközik, ha a foglalás túlnyúlik az új munkaidőn
+                $lekerdezes->where(function($q) use ($kezdes, $vege) {
+                    $q->where('ido_kezdes', '<', $kezdes)
+                      ->orWhere('ido_vege', '>', $vege);
+                });
+            }
+            
+            $napiUtkozok = $lekerdezes->with(['felhasznalo', 'szolgaltatas'])->get();
+            $utkozok = $utkozok->concat($napiUtkozok);
+        }
+
+        // 2. Kétlépcsős folyamat: ha van ütközés ÉS még nincs 'force_save' jóváhagyás
+        if ($utkozok->count() > 0 && !$request->has('force_save')) {
+            return back()->with('schedule_conflicts', $utkozok)
+                         ->with('pending_schedule', $ujBeosztas);
+        }
+
+        // 3. Mentés végrehajtása
+        foreach(range(1, 7) as $napId) {
+            $napAdat = $ujBeosztas[$napId] ?? null;
+            if (isset($napAdat['active'])) {
+                Beosztas::updateOrCreate(
+                    ['dolgozo_id' => $dolgozoId, 'napok_id' => $napId],
+                    ['ido_kezdes' => $napAdat['start'], 'ido_vege' => $napAdat['end']]
+                );
+            } else {
+                Beosztas::where('dolgozo_id', $dolgozoId)->where('napok_id', $napId)->delete();
+            }
+        }
+
+        // 4. Ütköző foglalások elutasítása és e-mail küldés egységes metódussal
+        if ($utkozok->count() > 0) {
+            $this->rejectAppointmentsWithEmail($utkozok, 'A szakember munkaidejének váratlan módosulása miatt az időpontod sajnos törlésre került. Kérjük, válassz egy új időpontot a weboldalon!');
+        }
+
+        return back()->with('success', 'A heti beosztásod sikeresen frissítve!');
     }
 
     /**
@@ -80,23 +155,8 @@ class WorkerController extends Controller
             ->with(['felhasznalo', 'szolgaltatas'])
             ->get();
 
-        foreach ($utkozoFoglalasok as $utkozo) {
-            $utkozo->statuszok_id = 3; // Elutasítva
-            $utkozo->save();
-
-            try {
-                Mail::to($utkozo->felhasznalo->email)->queue(
-                    new FoglalasLemondva([
-                        'nev' => $utkozo->felhasznalo->nev,
-                        'szolgaltatas' => $utkozo->szolgaltatas->nev,
-                        'datum' => $utkozo->datum,
-                        'ido' => substr($utkozo->ido_kezdes, 0, 5),
-                        'ok' => 'Sajnáljuk, de az időpont időközben betelt egy másik foglalás miatt.'
-                    ])
-                );
-            } catch (\Exception $e) {
-                Log::error('Elutasító email hiba: ' . $e->getMessage());
-            }
+        if ($utkozoFoglalasok->count() > 0) {
+            $this->rejectAppointmentsWithEmail($utkozoFoglalasok, 'Sajnáljuk, de az időpont időközben betelt egy másik foglalás miatt.');
         }
 
         return back()->with('success', 'A foglalást elfogadtad, az ütköző kérések pedig automatikusan elutasításra kerültek.');
@@ -114,22 +174,8 @@ class WorkerController extends Controller
             ->with(['felhasznalo', 'szolgaltatas'])
             ->firstOrFail();
 
-        $foglalas->statuszok_id = 3; 
-        $foglalas->save();
-
-        try {
-            Mail::to($foglalas->felhasznalo->email)->queue(
-                new FoglalasLemondva([
-                    'nev' => $foglalas->felhasznalo->nev,
-                    'szolgaltatas' => $foglalas->szolgaltatas->nev,
-                    'datum' => $foglalas->datum,
-                    'ido' => substr($foglalas->ido_kezdes, 0, 5),
-                    'ok' => 'Sajnáljuk, de a kért időpontot jelenleg nem tudjuk vállalni. Kérjük, próbálj meg egy másik időpontot foglalni a weboldalunkon!'
-                ])
-            );
-        } catch (\Exception $e) {
-            Log::error('Elutasító email hiba: ' . $e->getMessage());
-        }
+        // Egyetlen elemből is Collection-t készítünk, hogy egységesen tudjuk átadni
+        $this->rejectAppointmentsWithEmail(collect([$foglalas]), 'Sajnáljuk, de a kért időpontot jelenleg nem tudjuk vállalni. Kérjük, próbálj meg egy másik időpontot foglalni a weboldalunkon!');
 
         return back()->with('success', 'A foglalást elutasítottad, a vendéget e-mailben értesítettük.');
     }
@@ -160,7 +206,7 @@ class WorkerController extends Controller
         ]);
 
         if ($utkozoFoglalasok->count() > 0) {
-            $this->rejectAppointmentsDueToVacation($utkozoFoglalasok, $szabadsag);
+            $this->rejectAppointmentsWithEmail($utkozoFoglalasok, "A dolgozó szabadsága miatt ({$szabadsag->datum_kezdes} - {$szabadsag->datum_vege}) az időpontod sajnos törlésre került. Kérjük, foglalj egy új időpontot!");
         }
 
         return back()->with('success', 'Szabadság sikeresen rögzítve.');
@@ -193,7 +239,7 @@ class WorkerController extends Controller
         ]);
 
         if ($utkozoFoglalasok->count() > 0) {
-            $this->rejectAppointmentsDueToVacation($utkozoFoglalasok, $szabadsag);
+            $this->rejectAppointmentsWithEmail($utkozoFoglalasok, "A dolgozó szabadsága miatt ({$szabadsag->datum_kezdes} - {$szabadsag->datum_vege}) az időpontod sajnos törlésre került. Kérjük, foglalj egy új időpontot!");
         }
 
         return back()->with('success', 'Szabadság sikeresen módosítva.');
@@ -214,6 +260,34 @@ class WorkerController extends Controller
 
 
     // --- PRIVÁT SEGÉDMETÓDUSOK (CLEAN CODE) ---
+
+    /**
+     * KÖZPONTI METÓDUS: Minden elutasított/törölt foglalás adatbázis módosítását és e-mail küldését ez végzi.
+     */
+    private function rejectAppointmentsWithEmail($foglalasok, $ok)
+    {
+        $dolgozo = Auth::guard('worker')->user();
+
+        foreach ($foglalasok as $f) {
+            $f->statuszok_id = 3; // 3 = Elutasítva
+            $f->save();
+
+            try {
+                Mail::to($f->felhasznalo->email)->queue(
+                    new FoglalasLemondva([
+                        'nev' => $f->felhasznalo->nev,
+                        'szolgaltatas' => $f->szolgaltatas->nev,
+                        'dolgozo' => $dolgozo->nev,
+                        'datum' => $f->datum,
+                        'ido' => $f->ido_kezdes, // A Blade sablon végzi majd a substr($ido, 0, 5) formázást
+                        'ok' => $ok
+                    ])
+                );
+            } catch (\Exception $e) {
+                Log::error('Email küldési hiba lemondáskor: ' . $e->getMessage());
+            }
+        }
+    }
 
     private function validateVacation(Request $request)
     {
@@ -249,28 +323,6 @@ class WorkerController extends Controller
             ->whereDate('datum', '<=', $vege)
             ->with(['felhasznalo', 'szolgaltatas'])
             ->get();
-    }
-
-    private function rejectAppointmentsDueToVacation($foglalasok, $szabadsag)
-    {
-        foreach ($foglalasok as $foglalas) {
-            $foglalas->statuszok_id = 3; // Elutasítva
-            $foglalas->save();
-
-            try {
-                Mail::to($foglalas->felhasznalo->email)->queue(
-                    new FoglalasLemondva([
-                        'nev' => $foglalas->felhasznalo->nev,
-                        'szolgaltatas' => $foglalas->szolgaltatas->nev,
-                        'datum' => $foglalas->datum,
-                        'ido' => substr($foglalas->ido_kezdes, 0, 5),
-                        'ok' => 'A dolgozó szabadsága miatt ('. $szabadsag->datum_kezdes .' - '. $szabadsag->datum_vege .') az időpontod sajnos törlésre került. Kérjük, foglalj egy új időpontot!'
-                    ])
-                );
-            } catch (\Exception $e) {
-                Log::error('Szabadság email hiba: ' . $e->getMessage());
-            }
-        }
     }
 
     private function generateCalendarEvents($foglalasok, $szabadsagok)
