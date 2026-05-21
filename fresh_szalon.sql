@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Gép: 127.0.0.1:3306
--- Létrehozás ideje: 2026. Ápr 28. 10:54
+-- Létrehozás ideje: 2026. Máj 21. 10:14
 -- Kiszolgáló verziója: 10.4.32-MariaDB
 -- PHP verzió: 8.2.12
 
@@ -42,7 +42,8 @@ CREATE TABLE `beosztasok` (
 INSERT INTO `beosztasok` (`id`, `dolgozo_id`, `napok_id`, `ido_kezdes`, `ido_vege`) VALUES
 (1, 1, 1, '09:00:00', '17:00:00'),
 (2, 1, 3, '09:00:00', '17:00:00'),
-(3, 1, 5, '09:00:00', '17:00:00');
+(3, 1, 5, '09:00:00', '17:00:00'),
+(4, 1, 4, '09:00:00', '13:00:00');
 
 -- --------------------------------------------------------
 
@@ -90,7 +91,7 @@ CREATE TABLE `felhasznalo` (
 --
 
 INSERT INTO `felhasznalo` (`id`, `nev`, `email`, `telefonszam`, `jelszo`, `keszitve`, `velemenyt_irhat`, `foglalhat`) VALUES
-(1, 'Példa Felhasználó', 'pelda@pelda.com', '06301234567', '$2y$12$c.iBc/gnrJW7Lyn/LtL3S.b0Mgo.XaPTEAHcq7LuJwEkrOsSbWaVi', '2026-04-28 08:43:39', 1, 1);
+(1, 'Példa Felhasználóka', 'pelda@pelda.com', '06301234567', '$2y$12$c.iBc/gnrJW7Lyn/LtL3S.b0Mgo.XaPTEAHcq7LuJwEkrOsSbWaVi', '2026-04-28 08:43:39', 1, 1);
 
 -- --------------------------------------------------------
 
@@ -109,6 +110,13 @@ CREATE TABLE `idopontfoglalas` (
   `statuszok_id` bigint(20) UNSIGNED NOT NULL DEFAULT 1,
   `foglalas_idopontja` datetime NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- A tábla adatainak kiíratása `idopontfoglalas`
+--
+
+INSERT INTO `idopontfoglalas` (`id`, `felhasznalo_id`, `dolgozo_id`, `szolgaltatasok_id`, `datum`, `ido_kezdes`, `ido_vege`, `statuszok_id`, `foglalas_idopontja`) VALUES
+(1, 1, 1, 6, '2026-05-22', '09:00:00', '09:35:00', 2, '2026-05-21 08:07:52');
 
 -- --------------------------------------------------------
 
@@ -191,6 +199,30 @@ INSERT INTO `napok` (`id`, `nev`) VALUES
 -- --------------------------------------------------------
 
 --
+-- Tábla szerkezet ehhez a táblához `sessions`
+--
+
+CREATE TABLE `sessions` (
+  `id` varchar(255) NOT NULL,
+  `user_id` bigint(20) UNSIGNED DEFAULT NULL,
+  `ip_address` varchar(45) DEFAULT NULL,
+  `user_agent` text DEFAULT NULL,
+  `payload` longtext NOT NULL,
+  `last_activity` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- A tábla adatainak kiíratása `sessions`
+--
+
+INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
+('LOajPI9LdbDGNyY3A0KxtuvtmRAKMphn7mtduuQe', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36', 'YTozOntzOjY6Il90b2tlbiI7czo0MDoiN2htUEkwU2pUQmthTHNlUUhkc2szRUdxbHBXZ0FVallWWEhkY0ZoUCI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6MjE6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMCI7czo1OiJyb3V0ZSI7czo0OiJob21lIjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319fQ==', 1779277231),
+('QQGGmi5pLYstezJC1qlbmxm5C41olcOb6stbus6C', NULL, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoiczAyRHcwMm5JQjM1WmJQRzcwSnUwb0psYkxyUXlwQ2pBMkZOOEhYOSI7czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6Mjc6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9sb2dpbiI7czo1OiJyb3V0ZSI7czoxMDoibG9naW4uc2hvdyI7fXM6NjoiX2ZsYXNoIjthOjI6e3M6Mzoib2xkIjthOjA6e31zOjM6Im5ldyI7YTowOnt9fXM6MzoidXJsIjthOjE6e3M6ODoiaW50ZW5kZWQiO3M6Mzc6Imh0dHA6Ly9sb2NhbGhvc3Q6ODAwMC9pZG9wb250Zm9nbGFsYXMiO319', 1763635424),
+('I5YXMai68IiIN7kUcjgqsgrv6zthM9IM9KEjBdsI', 1, '127.0.0.1', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36', 'YTo0OntzOjY6Il90b2tlbiI7czo0MDoicEFwVkNQcERnOHpvY2ZHVzc5T1ZLNjhrVVhJWjVXZ2J0cE9hRFh3VSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6Mjp7czozOiJ1cmwiO3M6Mjg6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9wcm9maWwiO3M6NToicm91dGUiO3M6MTM6InByb2ZpbGUuaW5kZXgiO31zOjUwOiJsb2dpbl93ZWJfNTliYTM2YWRkYzJiMmY5NDAxNTgwZjAxNGM3ZjU4ZWE0ZTMwOTg5ZCI7aToxO30=', 1779351035);
+
+-- --------------------------------------------------------
+
+--
 -- Tábla szerkezet ehhez a táblához `statuszok`
 --
 
@@ -221,6 +253,13 @@ CREATE TABLE `szabadsagok` (
   `datum_kezdes` date NOT NULL,
   `datum_vege` date NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- A tábla adatainak kiíratása `szabadsagok`
+--
+
+INSERT INTO `szabadsagok` (`id`, `dolgozo_id`, `datum_kezdes`, `datum_vege`) VALUES
+(1, 1, '2026-05-25', '2026-05-27');
 
 -- --------------------------------------------------------
 
@@ -423,7 +462,7 @@ ALTER TABLE `velemenyek`
 -- AUTO_INCREMENT a táblához `beosztasok`
 --
 ALTER TABLE `beosztasok`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT a táblához `dolgozo`
@@ -441,7 +480,7 @@ ALTER TABLE `felhasznalo`
 -- AUTO_INCREMENT a táblához `idopontfoglalas`
 --
 ALTER TABLE `idopontfoglalas`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT a táblához `lehetosegek`
@@ -471,7 +510,7 @@ ALTER TABLE `statuszok`
 -- AUTO_INCREMENT a táblához `szabadsagok`
 --
 ALTER TABLE `szabadsagok`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT a táblához `szolgaltatasok`
